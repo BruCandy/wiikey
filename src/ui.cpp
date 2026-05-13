@@ -8,6 +8,7 @@
 #include "app.h"
 #include "keys.h"
 #include "flick.h"
+#include "uinput_dev.h"
 
 
 void pangoDrawText(cairo_t *cr, const char *text, double x, double y,
@@ -169,4 +170,5 @@ void onSpaceClicked(GtkButton*, gpointer) {
     app.text += "　";
     gtk_entry_set_text(GTK_ENTRY(app.entry), app.text.c_str());
     gtk_editable_set_position(GTK_EDITABLE(app.entry), -1);
+    uinputSendChar(0x0020);
 }

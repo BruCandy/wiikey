@@ -7,6 +7,8 @@
 #include <condition_variable>
 #include <thread>
 #include <atomic>
+#include <unordered_map>
+#include <vector>
 
 // linux
 #include <linux/uinput.h>
@@ -24,6 +26,110 @@ static std::condition_variable     queue_cv;
 static std::thread                 worker;
 static std::atomic<bool>           running{false};
 
+static const std::unordered_map<uint32_t, std::vector<int>>& romajiMap() {
+    static const std::unordered_map<uint32_t, std::vector<int>> m = {
+        {0x3042, {KEY_A}},
+        {0x3044, {KEY_I}},
+        {0x3046, {KEY_U}},
+        {0x3048, {KEY_E}},
+        {0x304A, {KEY_O}},
+
+        {0x304B, {KEY_K, KEY_A}},
+        {0x304D, {KEY_K, KEY_I}},
+        {0x304F, {KEY_K, KEY_U}},
+        {0x3051, {KEY_K, KEY_E}},
+        {0x3053, {KEY_K, KEY_O}},
+
+        {0x3055, {KEY_S, KEY_A}},
+        {0x3057, {KEY_S, KEY_I}},
+        {0x3059, {KEY_S, KEY_U}},
+        {0x305B, {KEY_S, KEY_E}},
+        {0x305D, {KEY_S, KEY_O}},
+
+        {0x305F, {KEY_T, KEY_A}},
+        {0x3061, {KEY_T, KEY_I}},
+        {0x3064, {KEY_T, KEY_U}},
+        {0x3066, {KEY_T, KEY_E}},
+        {0x3068, {KEY_T, KEY_O}},
+
+        {0x306A, {KEY_N, KEY_A}},
+        {0x306B, {KEY_N, KEY_I}},
+        {0x306C, {KEY_N, KEY_U}},
+        {0x306D, {KEY_N, KEY_E}},
+        {0x306E, {KEY_N, KEY_O}},
+
+        {0x306F, {KEY_H, KEY_A}},
+        {0x3072, {KEY_H, KEY_I}},
+        {0x3075, {KEY_H, KEY_U}},
+        {0x3078, {KEY_H, KEY_E}},
+        {0x307B, {KEY_H, KEY_O}},
+
+        {0x307E, {KEY_M, KEY_A}},
+        {0x307F, {KEY_M, KEY_I}},
+        {0x3080, {KEY_M, KEY_U}},
+        {0x3081, {KEY_M, KEY_E}},
+        {0x3082, {KEY_M, KEY_O}},
+
+        {0x3084, {KEY_Y, KEY_A}},
+        {0x3086, {KEY_Y, KEY_U}},
+        {0x3088, {KEY_Y, KEY_O}},
+
+        {0x3089, {KEY_R, KEY_A}},
+        {0x308A, {KEY_R, KEY_I}},
+        {0x308B, {KEY_R, KEY_U}},
+        {0x308C, {KEY_R, KEY_E}},
+        {0x308D, {KEY_R, KEY_O}},
+
+        {0x308F, {KEY_W, KEY_A}},
+        {0x3092, {KEY_W, KEY_O}},
+        {0x3093, {KEY_N, KEY_N}},
+
+        {0x3041, {KEY_X, KEY_A}},
+        {0x3043, {KEY_X, KEY_I}},
+        {0x3045, {KEY_X, KEY_U}},
+        {0x3047, {KEY_X, KEY_E}},
+        {0x3049, {KEY_X, KEY_O}},
+        {0x3083, {KEY_X, KEY_Y, KEY_A}},
+        {0x3085, {KEY_X, KEY_Y, KEY_U}},
+        {0x3087, {KEY_X, KEY_Y, KEY_O}},
+        {0x3063, {KEY_X, KEY_T, KEY_U}},
+        {0x308E, {KEY_X, KEY_W, KEY_A}},
+
+        {0x304C, {KEY_G, KEY_A}},
+        {0x304E, {KEY_G, KEY_I}},
+        {0x3050, {KEY_G, KEY_U}},
+        {0x3052, {KEY_G, KEY_E}},
+        {0x3054, {KEY_G, KEY_O}},
+
+        {0x3056, {KEY_Z, KEY_A}},
+        {0x3058, {KEY_Z, KEY_I}},
+        {0x305A, {KEY_Z, KEY_U}},
+        {0x305C, {KEY_Z, KEY_E}},
+        {0x305E, {KEY_Z, KEY_O}},
+
+        {0x3060, {KEY_D, KEY_A}},
+        {0x3062, {KEY_D, KEY_I}},
+        {0x3065, {KEY_D, KEY_U}},
+        {0x3067, {KEY_D, KEY_E}},
+        {0x3069, {KEY_D, KEY_O}},
+
+        {0x3070, {KEY_B, KEY_A}},
+        {0x3073, {KEY_B, KEY_I}},
+        {0x3076, {KEY_B, KEY_U}},
+        {0x3079, {KEY_B, KEY_E}},
+        {0x307C, {KEY_B, KEY_O}},
+
+        {0x3071, {KEY_P, KEY_A}},
+        {0x3074, {KEY_P, KEY_I}},
+        {0x3077, {KEY_P, KEY_U}},
+        {0x307A, {KEY_P, KEY_E}},
+        {0x307D, {KEY_P, KEY_O}},
+
+        {0x30FC, {KEY_MINUS}},
+    };
+    return m;
+}
+
 static void emit(int type, int code, int val) {
     struct input_event ev{};
     ev.type  = type;
@@ -37,38 +143,11 @@ static void keyTap(int code) {
     emit(EV_KEY, code, 0); emit(EV_SYN, SYN_REPORT, 0); usleep(5000);
 }
 
-static int hexKeycode(char h) {
-    switch (h) {
-        case '0': return KEY_0; case '1': return KEY_1;
-        case '2': return KEY_2; case '3': return KEY_3;
-        case '4': return KEY_4; case '5': return KEY_5;
-        case '6': return KEY_6; case '7': return KEY_7;
-        case '8': return KEY_8; case '9': return KEY_9;
-        case 'a': return KEY_A; case 'b': return KEY_B;
-        case 'c': return KEY_C; case 'd': return KEY_D;
-        case 'e': return KEY_E; case 'f': return KEY_F;
-        default:  return -1;
-    }
-}
-
-static void sendUnicode(uint32_t cp) {
-    emit(EV_KEY, KEY_LEFTCTRL,  1); emit(EV_SYN, SYN_REPORT, 0);
-    emit(EV_KEY, KEY_LEFTSHIFT, 1); emit(EV_SYN, SYN_REPORT, 0);
-    emit(EV_KEY, KEY_U,         1); emit(EV_SYN, SYN_REPORT, 0);
-    emit(EV_KEY, KEY_U,         0); emit(EV_SYN, SYN_REPORT, 0);
-    emit(EV_KEY, KEY_LEFTSHIFT, 0); emit(EV_SYN, SYN_REPORT, 0);
-    emit(EV_KEY, KEY_LEFTCTRL,  0); emit(EV_SYN, SYN_REPORT, 0);
-    usleep(20000);
-
-    char hex[9];
-    snprintf(hex, sizeof(hex), "%x", cp);
-    for (int i = 0; hex[i]; i++) {
-        int k = hexKeycode(hex[i]);
-        if (k >= 0) keyTap(k);
-    }
-
-    keyTap(KEY_ENTER);
-    usleep(10000);
+static void sendChar(uint32_t cp) {
+    if (cp == 0x0020 || cp == 0x3000) { keyTap(KEY_SPACE); return; }
+    auto it = romajiMap().find(cp);
+    if (it == romajiMap().end()) return;
+    for (int k : it->second) keyTap(k);
 }
 
 static void workerFunc() {
@@ -82,7 +161,7 @@ static void workerFunc() {
             if (cp == CP_BACKSPACE)
                 keyTap(KEY_BACKSPACE);
             else
-                sendUnicode(cp);
+                sendChar(cp);
             lock.lock();
         }
     }
@@ -99,10 +178,11 @@ bool uinputInit() {
     ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
     const int keys[] = {
-        KEY_LEFTCTRL, KEY_LEFTSHIFT, KEY_U, KEY_ENTER, KEY_BACKSPACE,
-        KEY_0, KEY_1, KEY_2, KEY_3, KEY_4,
-        KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
-        KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F,
+        KEY_A, KEY_B, KEY_D, KEY_E, KEY_G, KEY_H,
+        KEY_I, KEY_K, KEY_M, KEY_N, KEY_O, KEY_P,
+        KEY_R, KEY_S, KEY_T, KEY_U, KEY_W, KEY_X,
+        KEY_Y, KEY_Z,
+        KEY_BACKSPACE, KEY_MINUS, KEY_SPACE,
     };
     for (int k : keys) ioctl(fd, UI_SET_KEYBIT, k);
 
