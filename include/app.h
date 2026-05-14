@@ -18,7 +18,6 @@ struct AppState {
     double       cur_x      = 0;
     double       cur_y      = 0;
     GtkWidget   *drawing_area = nullptr;
-    GtkWidget   *entry        = nullptr;
 };
 
 inline AppState app;

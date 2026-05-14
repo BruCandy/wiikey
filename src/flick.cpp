@@ -44,7 +44,4 @@ void applyKey(int row, int col, FlickDir dir) {
         app.text += ch;
         uinputSendChar(utf8ToCp(std::string(ch)));
     }
-
-    gtk_entry_set_text(GTK_ENTRY(app.entry), app.text.c_str());
-    gtk_editable_set_position(GTK_EDITABLE(app.entry), -1);
 }

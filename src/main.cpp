@@ -23,11 +23,6 @@ int main(int argc, char *argv[]) {
     gtk_container_set_border_width(GTK_CONTAINER(window), 4);
     gtk_container_add(GTK_CONTAINER(window), vbox);
 
-    app.entry = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(app.entry), "ここに入力されます...");
-    gtk_widget_set_size_request(app.entry, COLS * KEY_W, -1);
-    gtk_box_pack_start(GTK_BOX(vbox), app.entry, FALSE, FALSE, 0);
-
     GtkWidget *hbox      = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     GtkWidget *btn_space = gtk_button_new_with_label("スペース");
     GtkWidget *btn_clear = gtk_button_new_with_label("クリア");

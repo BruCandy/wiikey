@@ -163,12 +163,9 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
 
 void onClearClicked(GtkButton*, gpointer) {
     app.text.clear();
-    gtk_entry_set_text(GTK_ENTRY(app.entry), "");
 }
 
 void onSpaceClicked(GtkButton*, gpointer) {
     app.text += "　";
-    gtk_entry_set_text(GTK_ENTRY(app.entry), app.text.c_str());
-    gtk_editable_set_position(GTK_EDITABLE(app.entry), -1);
     uinputSendChar(0x0020);
 }
