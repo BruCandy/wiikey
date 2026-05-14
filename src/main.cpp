@@ -25,12 +25,12 @@ int main(int argc, char *argv[]) {
 
     GtkWidget *hbox      = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     GtkWidget *btn_space = gtk_button_new_with_label("スペース");
-    GtkWidget *btn_clear = gtk_button_new_with_label("クリア");
+    GtkWidget *btn_tab   = gtk_button_new_with_label("タブ");
     gtk_box_pack_start(GTK_BOX(hbox), btn_space, TRUE,  TRUE,  0);
-    gtk_box_pack_start(GTK_BOX(hbox), btn_clear, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), btn_tab,   FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     g_signal_connect(btn_space, "clicked", G_CALLBACK(onSpaceClicked), nullptr);
-    g_signal_connect(btn_clear, "clicked", G_CALLBACK(onClearClicked), nullptr);
+    g_signal_connect(btn_tab,   "clicked", G_CALLBACK(onTabClicked),   nullptr);
 
     app.drawing_area = gtk_drawing_area_new();
     gtk_widget_set_size_request(app.drawing_area, COLS * KEY_W, ROWS * KEY_H);

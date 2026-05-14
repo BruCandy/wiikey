@@ -161,8 +161,8 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
     return FALSE;
 }
 
-void onClearClicked(GtkButton*, gpointer) {
-    app.text.clear();
+void onTabClicked(GtkButton*, gpointer) {
+    uinputSendChar(0x0009);
 }
 
 void onSpaceClicked(GtkButton*, gpointer) {

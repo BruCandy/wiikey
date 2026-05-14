@@ -144,6 +144,7 @@ static void keyTap(int code) {
 }
 
 static void sendChar(uint32_t cp) {
+    if (cp == 0x0009)                 { keyTap(KEY_TAB);   return; }
     if (cp == 0x0020 || cp == 0x3000) { keyTap(KEY_SPACE); return; }
     auto it = romajiMap().find(cp);
     if (it == romajiMap().end()) return;
@@ -182,7 +183,7 @@ bool uinputInit() {
         KEY_I, KEY_K, KEY_M, KEY_N, KEY_O, KEY_P,
         KEY_R, KEY_S, KEY_T, KEY_U, KEY_W, KEY_X,
         KEY_Y, KEY_Z,
-        KEY_BACKSPACE, KEY_MINUS, KEY_SPACE,
+        KEY_BACKSPACE, KEY_MINUS, KEY_SPACE, KEY_TAB,
     };
     for (int k : keys) ioctl(fd, UI_SET_KEYBIT, k);
 
