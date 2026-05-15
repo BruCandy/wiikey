@@ -11,6 +11,24 @@
 #include "uinput_dev.h"
 
 
+struct FlickLabelPos {
+    FlickDir d;
+    double cx, cy;
+};
+
+static void roundedRect(cairo_t *cr, double x, double y, double w, double h, double r) {
+    cairo_move_to(cr, x + r, y);
+    cairo_line_to(cr, x + w - r, y);
+    cairo_arc(cr, x + w - r, y + r,     r,  -M_PI/2, 0);
+    cairo_line_to(cr, x + w, y + h - r);
+    cairo_arc(cr, x + w - r, y + h - r, r,  0,       M_PI/2);
+    cairo_line_to(cr, x + r, y + h);
+    cairo_arc(cr, x + r,     y + h - r, r,  M_PI/2,  M_PI);
+    cairo_line_to(cr, x, y + r);
+    cairo_arc(cr, x + r,     y + r,     r,  M_PI,    3*M_PI/2);
+    cairo_close_path(cr);
+}
+
 void pangoDrawText(cairo_t *cr, const char *text, double x, double y,
                    double box_w, double box_h, int font_size, bool center) {
     PangoLayout *layout = pango_cairo_create_layout(cr);
@@ -70,6 +88,9 @@ gboolean onButtonRelease(GtkWidget *widget, GdkEventButton *event, gpointer) {
 }
 
 gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
+    cairo_set_source_rgb(cr, 0.85, 0.85, 0.85);
+    cairo_paint(cr);
+
     FlickDir live_dir = CENTER;
     if (app.pressing) {
         live_dir = getDirection(app.cur_x - app.press_x,
@@ -80,29 +101,20 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
         for (int c = 0; c < COLS; c++) {
             double x = c * KEY_W;
             double y = r * KEY_H;
-            bool pressed = (app.pressing && app.press_row == r && app.press_col == c);
+            bool pressed = (app.pressing && (app.press_row == r) && (app.press_col == c));
 
             if (pressed) {
-                cairo_set_source_rgb(cr, 0.55, 0.78, 1.0);
-            } else if (r == ROWS-1 && c == COLS-1) {
-                cairo_set_source_rgb(cr, 1.0, 0.68, 0.68);
-            } else if (r == ROWS-1 && c == 0) {
-                cairo_set_source_rgb(cr, 0.95, 0.93, 0.68);
+                cairo_set_source_rgb(cr, 0.85, 0.85, 0.85);
             } else {
-                cairo_set_source_rgb(cr, 0.88, 0.88, 0.88);
+                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
             }
-            cairo_rectangle(cr, x+1, y+1, KEY_W-2, KEY_H-2);
+            roundedRect(cr, x+4, y+4, KEY_W-8, KEY_H-8, 10);
             cairo_fill(cr);
-
-            cairo_set_source_rgb(cr, 0.55, 0.55, 0.55);
-            cairo_set_line_width(cr, 1.0);
-            cairo_rectangle(cr, x+0.5, y+0.5, KEY_W-1, KEY_H-1);
-            cairo_stroke(cr);
 
             const KeyDef &key = KEYS[r][c];
 
             if (pressed) {
-                struct { FlickDir d; double cx, cy; } pos[] = {
+                FlickLabelPos pos[] = {
                     {UP,    x + KEY_W/2.0, y + 8},
                     {RIGHT, x + KEY_W - 8, y + KEY_H/2.0 - 8},
                     {DOWN,  x + KEY_W/2.0, y + KEY_H - 24},
@@ -110,8 +122,7 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
                 };
                 for (auto &p : pos) {
                     const char *ch = key.chars[p.d];
-                    if (!ch || ch == ACT_BACKSPACE || ch == ACT_DAKUTEN ||
-                        ch == ACT_HANDAKUTEN || ch == ACT_SMALL) continue;
+                    if (!ch || ch == ACT_BACKSPACE || ch == ACT_DAKUTEN || ch == ACT_HANDAKUTEN || ch == ACT_SMALL) continue;
                     if (p.d == live_dir)
                         cairo_set_source_rgb(cr, 0.85, 0.25, 0.05);
                     else

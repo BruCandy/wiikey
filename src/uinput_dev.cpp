@@ -138,17 +138,30 @@ static void emit(int type, int code, int val) {
     write(fd, &ev, sizeof(ev));
 }
 
-static void keyTap(int code) {
-    emit(EV_KEY, code, 1); emit(EV_SYN, SYN_REPORT, 0); usleep(5000);
-    emit(EV_KEY, code, 0); emit(EV_SYN, SYN_REPORT, 0); usleep(5000);
+static void emitKey(int code) {
+    emit(EV_KEY, code, 1);
+    emit(EV_SYN, SYN_REPORT, 0);
+    usleep(5000);
+
+    emit(EV_KEY, code, 0);
+    emit(EV_SYN, SYN_REPORT, 0);
+    usleep(5000);
 }
 
 static void sendChar(uint32_t cp) {
-    if (cp == 0x0009)                 { keyTap(KEY_TAB);   return; }
-    if (cp == 0x0020 || cp == 0x3000) { keyTap(KEY_SPACE); return; }
+    if (cp == 0x0009) {
+        emitKey(KEY_TAB);
+        return;
+    }
+    if (cp == 0x0020 || cp == 0x3000) {
+        emitKey(KEY_SPACE);
+        return;
+    }
     auto it = romajiMap().find(cp);
     if (it == romajiMap().end()) return;
-    for (int k : it->second) keyTap(k);
+    for (int k : it->second) {
+        emitKey(k);
+    }
 }
 
 static void workerFunc() {
@@ -160,7 +173,7 @@ static void workerFunc() {
             char_queue.pop();
             lock.unlock();
             if (cp == CP_BACKSPACE)
-                keyTap(KEY_BACKSPACE);
+                emitKey(KEY_BACKSPACE);
             else
                 sendChar(cp);
             lock.lock();
@@ -169,14 +182,14 @@ static void workerFunc() {
 }
 
 bool uinputInit() {
-    fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+    fd = ::open("/dev/uinput", O_WRONLY | O_NONBLOCK);
     if (fd < 0) {
         perror("uinput: open /dev/uinput");
         return false;
     }
 
-    ioctl(fd, UI_SET_EVBIT, EV_KEY);
-    ioctl(fd, UI_SET_EVBIT, EV_SYN);
+    ::ioctl(fd, UI_SET_EVBIT, EV_KEY);
+    ::ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
     const int keys[] = {
         KEY_A, KEY_B, KEY_D, KEY_E, KEY_G, KEY_H,
@@ -185,20 +198,23 @@ bool uinputInit() {
         KEY_Y, KEY_Z,
         KEY_BACKSPACE, KEY_MINUS, KEY_SPACE, KEY_TAB,
     };
-    for (int k : keys) ioctl(fd, UI_SET_KEYBIT, k);
+    for (int k : keys) {
+        ::ioctl(fd, UI_SET_KEYBIT, k);
+    }
 
-    struct uinput_setup usetup{};
-    usetup.id.bustype = BUS_USB;
-    usetup.id.vendor  = 0x1234;
-    usetup.id.product = 0x5678;
-    strncpy(usetup.name, "wiikey", UINPUT_MAX_NAME_SIZE);
+    struct uinput_user_dev uidev = {0};
+    std::snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "wiikey");
+    uidev.id.bustype = BUS_USB;
+    uidev.id.vendor  = 0x1234;
+    uidev.id.product = 0x5678;
+    uidev.id.version = 1;
 
-    ioctl(fd, UI_DEV_SETUP, &usetup);
-    ioctl(fd, UI_DEV_CREATE);
-    usleep(200000);
+    ::write(fd, &uidev, sizeof(uidev));
+    ::ioctl(fd, UI_DEV_CREATE);
 
     running = true;
     worker  = std::thread(workerFunc);
+
     return true;
 }
 
