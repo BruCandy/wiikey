@@ -2,11 +2,6 @@
 #include <unistd.h>
 #include <cstring>
 #include <cstdio>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
-#include <thread>
-#include <atomic>
 #include <unordered_map>
 #include <vector>
 
@@ -19,12 +14,7 @@
 
 static const uint32_t CP_BACKSPACE = 0x0008;
 
-static int                         fd = -1;
-static std::queue<uint32_t>        char_queue;
-static std::mutex                  queue_mtx;
-static std::condition_variable     queue_cv;
-static std::thread                 worker;
-static std::atomic<bool>           running{false};
+static int fd = -1;
 
 static const std::unordered_map<uint32_t, std::vector<int>>& romajiMap() {
     static const std::unordered_map<uint32_t, std::vector<int>> m = {
@@ -164,22 +154,6 @@ static void sendChar(uint32_t cp) {
     }
 }
 
-static void workerFunc() {
-    while (running) {
-        std::unique_lock<std::mutex> lock(queue_mtx);
-        queue_cv.wait(lock, [] { return !char_queue.empty() || !running; });
-        while (!char_queue.empty()) {
-            uint32_t cp = char_queue.front();
-            char_queue.pop();
-            lock.unlock();
-            if (cp == CP_BACKSPACE)
-                emitKey(KEY_BACKSPACE);
-            else
-                sendChar(cp);
-            lock.lock();
-        }
-    }
-}
 
 bool uinputInit() {
     fd = ::open("/dev/uinput", O_WRONLY | O_NONBLOCK);
@@ -212,16 +186,10 @@ bool uinputInit() {
     ::write(fd, &uidev, sizeof(uidev));
     ::ioctl(fd, UI_DEV_CREATE);
 
-    running = true;
-    worker  = std::thread(workerFunc);
-
     return true;
 }
 
 void uinputClose() {
-    running = false;
-    queue_cv.notify_one();
-    if (worker.joinable()) worker.join();
     if (fd >= 0) {
         ioctl(fd, UI_DEV_DESTROY);
         close(fd);
@@ -231,11 +199,11 @@ void uinputClose() {
 
 void uinputSendChar(uint32_t cp) {
     if (fd < 0) return;
-    {
-        std::lock_guard<std::mutex> lock(queue_mtx);
-        char_queue.push(cp);
+    if (cp == CP_BACKSPACE) {
+        emitKey(KEY_BACKSPACE);
+        return;
     }
-    queue_cv.notify_one();
+    sendChar(cp);
 }
 
 void uinputSendBackspace() {
