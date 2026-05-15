@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=wiikey
+Exec=wiikey
+Comment=flick keyboard for wii remote controler
+Terminal=false
+Icon=wiikey_icon_48
+Type=Application
