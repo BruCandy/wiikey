@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), nullptr);
 
     app.drawing_area = gtk_drawing_area_new();
-    gtk_widget_set_size_request(app.drawing_area, COLS * KEY_W, ROWS * KEY_H);
+    gtk_widget_set_size_request(app.drawing_area, COLS * KEY_W, ROWS * KEY_H + TOP_OFFSET);
     gtk_widget_add_events(app.drawing_area, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
     g_signal_connect(app.drawing_area, "draw",                 G_CALLBACK(onDraw),          nullptr);
     g_signal_connect(app.drawing_area, "button-press-event",   G_CALLBACK(onButtonPress),   nullptr);

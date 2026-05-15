@@ -53,7 +53,7 @@ void pangoDrawText(cairo_t *cr, const char *text, double x, double y,
 gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, gpointer) {
     if (event->button != 1) return FALSE;
     int col = (int)(event->x / KEY_W);
-    int row = (int)(event->y / KEY_H);
+    int row = (int)((event->y - TOP_OFFSET) / KEY_H);
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return FALSE;
 
     app.pressing  = true;
@@ -100,7 +100,7 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
     for (int r = 0; r < ROWS; r++) {
         for (int c = 0; c < COLS; c++) {
             double x = c * KEY_W;
-            double y = r * KEY_H;
+            double y = r * KEY_H + TOP_OFFSET;
             bool pressed = (app.pressing && (app.press_row == r) && (app.press_col == c));
 
             if (pressed) {
@@ -134,10 +134,10 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
                     cairo_set_source_rgb(cr, 0.85, 0.25, 0.05);
                 else
                     cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
-                pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, 20);
+                pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, key.font_size);
             } else {
                 cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
-                pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, 20);
+                pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, key.font_size);
             }
         }
     }
@@ -148,7 +148,7 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
         double dist = std::sqrt(dx*dx + dy*dy);
         if (dist > 8) {
             double kx = app.press_col * KEY_W + KEY_W / 2.0;
-            double ky = app.press_row * KEY_H + KEY_H / 2.0;
+            double ky = app.press_row * KEY_H + KEY_H / 2.0 + TOP_OFFSET;
             double scale = std::min(dist, KEY_W / 2.0 - 12) / dist;
             double ex = kx + dx * scale;
             double ey = ky + dy * scale;
