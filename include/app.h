@@ -17,6 +17,8 @@ struct AppState {
     double       press_y    = 0;
     double       cur_x      = 0;
     double       cur_y      = 0;
+    int          hover_row  = -1;
+    int          hover_col  = -1;
     GtkWidget   *drawing_area = nullptr;
 };
 

@@ -14,6 +14,7 @@ void     pangoDrawText(cairo_t *cr, const char *text, double x, double y,
 
 gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, gpointer data);
 gboolean onMotion(GtkWidget *widget, GdkEventMotion *event, gpointer data);
+gboolean onLeaveNotify(GtkWidget *widget, GdkEventCrossing *event, gpointer data);
 gboolean onButtonRelease(GtkWidget *widget, GdkEventButton *event, gpointer data);
 gboolean onDraw(GtkWidget *widget, cairo_t *cr, gpointer data);
 void     onTabClicked(GtkButton *button, gpointer data);

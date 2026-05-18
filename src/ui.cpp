@@ -143,11 +143,28 @@ gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, gpointer) {
 }
 
 gboolean onMotion(GtkWidget *widget, GdkEventMotion *event, gpointer) {
+    int col = (int)(event->x / KEY_W);
+    int row = (int)((event->y - TOP_OFFSET) / KEY_H);
+    int new_hover_row = (row >= 0 && row < ROWS && col >= 0 && col < COLS) ? row : -1;
+    int new_hover_col = (new_hover_row >= 0) ? col : -1;
+    if (new_hover_row != app.hover_row || new_hover_col != app.hover_col) {
+        app.hover_row = new_hover_row;
+        app.hover_col = new_hover_col;
+        gtk_widget_queue_draw(widget);
+    }
+
     if (!app.pressing) return FALSE;
     app.cur_x = event->x;
     app.cur_y = event->y;
     gtk_widget_queue_draw(widget);
     return TRUE;
+}
+
+gboolean onLeaveNotify(GtkWidget *widget, GdkEventCrossing*, gpointer) {
+    app.hover_row = -1;
+    app.hover_col = -1;
+    gtk_widget_queue_draw(widget);
+    return FALSE;
 }
 
 gboolean onButtonRelease(GtkWidget *widget, GdkEventButton *event, gpointer) {
@@ -178,8 +195,11 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
             double y = r * KEY_H + TOP_OFFSET;
             bool pressed = (app.pressing && (app.press_row == r) && (app.press_col == c));
 
+            bool hovered = (app.hover_row == r && app.hover_col == c);
             if (pressed) {
                 cairo_set_source_rgb(cr, 0.85, 0.85, 0.85);
+            } else if (hovered) {
+                cairo_set_source_rgb(cr, 0.88, 0.93, 1.0);
             } else {
                 cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
             }
