@@ -19,14 +19,89 @@ struct FlickLabelPos {
 static void roundedRect(cairo_t *cr, double x, double y, double w, double h, double r) {
     cairo_move_to(cr, x + r, y);
     cairo_line_to(cr, x + w - r, y);
-    cairo_arc(cr, x + w - r, y + r,     r,  -M_PI/2, 0);
+    cairo_arc(cr, x + w - r, y + r, r, -M_PI/2, 0);
     cairo_line_to(cr, x + w, y + h - r);
-    cairo_arc(cr, x + w - r, y + h - r, r,  0,       M_PI/2);
+    cairo_arc(cr, x + w - r, y + h - r, r, 0, M_PI/2);
     cairo_line_to(cr, x + r, y + h);
-    cairo_arc(cr, x + r,     y + h - r, r,  M_PI/2,  M_PI);
+    cairo_arc(cr, x + r, y + h - r, r, M_PI/2, M_PI);
     cairo_line_to(cr, x, y + r);
-    cairo_arc(cr, x + r,     y + r,     r,  M_PI,    3*M_PI/2);
+    cairo_arc(cr, x + r, y + r, r, M_PI, 3*M_PI/2);
     cairo_close_path(cr);
+}
+
+static void drawCallout(cairo_t *cr, double kx, double ky, KeyDef key, FlickDir d) {
+    if (d == CENTER) return;
+
+    const double pw = KEY_W - 3, ph = KEY_H - 3, pr = 12, pt = 10;
+    double px, py;
+    if (d == UP) {
+        px = kx - pw/2;
+        py = ky - ph/2 - ph + 3;
+    }
+    else if (d == DOWN) {
+        px = kx - pw/2;
+        py = ky + KEY_H/2 - 3;
+    }
+    else if (d == RIGHT) {
+        px = kx + KEY_W/2;
+        py = ky - ph/2;
+    }
+    else if (d == LEFT) {
+        px = kx - KEY_W/2 - pw;
+        py = ky - ph/2;
+    }
+
+    cairo_new_path(cr);
+    switch (d) {
+        case UP:
+            cairo_move_to(cr, px + pr, py);
+            cairo_line_to(cr, px + pw - pr, py);
+            cairo_arc(cr, px + pw - pr, py + pr, pr, -M_PI/2, 0);
+            cairo_line_to(cr, px + pw, py + ph - pr);
+            cairo_line_to(cr, px + pw/2, py + ph + pt);
+            cairo_line_to(cr, px, py + ph - pr);
+            cairo_line_to(cr, px, py + pr);
+            cairo_arc(cr, px + pr, py + pr, pr, M_PI, 3*M_PI/2);
+            break;
+        case DOWN:
+            cairo_move_to(cr, px, py + pr);
+            cairo_line_to(cr, px + pw/2, py - pt);
+            cairo_line_to(cr, px + pw, py + pr);
+            cairo_line_to(cr, px + pw, py + ph - pr);
+            cairo_arc(cr, px + pw - pr, py + ph - pr, pr, 0, M_PI/2);
+            cairo_line_to(cr, px + pr, py + ph);
+            cairo_arc(cr, px + pr, py + ph - pr, pr,  M_PI/2, M_PI);
+            cairo_line_to(cr, px, py + pr);
+            break;
+        case RIGHT:
+            cairo_move_to(cr, px + pr, py);
+            cairo_line_to(cr, px + pw - pr, py);
+            cairo_arc(cr, px + pw - pr, py + pr, pr, -M_PI/2, 0);
+            cairo_line_to(cr, px + pw, py + ph - pr);
+            cairo_arc(cr, px + pw - pr, py + ph - pr, pr, 0, M_PI/2);
+            cairo_line_to(cr, px + pr, py + ph);
+            cairo_line_to(cr, px - pt, py + ph/2);
+            cairo_line_to(cr, px + pr, py);
+            break;
+        case LEFT:
+            cairo_move_to(cr, px + pr, py);
+            cairo_line_to(cr, px + pw - pr, py);
+            cairo_line_to(cr, px + pw + pt, py + ph/2);
+            cairo_line_to(cr, px + pw - pr, py + ph);
+            cairo_line_to(cr, px + pr, py + ph);
+            cairo_arc(cr, px + pr, py + ph - pr, pr, M_PI/2, M_PI);
+            cairo_line_to(cr, px, py + pr);
+            cairo_arc(cr, px + pr, py + pr, pr, M_PI, 3*M_PI/2);
+            break;
+        default: break;
+    }
+    cairo_close_path(cr);
+
+    cairo_set_source_rgb(cr, 0.7, 0.7, 0.7);
+    cairo_fill(cr);
+
+    cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
+    pangoDrawText(cr, key.chars[d], px, py, pw, ph, key.font_size);
 }
 
 void pangoDrawText(cairo_t *cr, const char *text, double x, double y,
@@ -108,64 +183,22 @@ gboolean onDraw(GtkWidget*, cairo_t *cr, gpointer) {
             } else {
                 cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
             }
-            roundedRect(cr, x+4, y+4, KEY_W-8, KEY_H-8, 10);
+            roundedRect(cr, x+3, y+3, KEY_W-6, KEY_H-6, 10);
             cairo_fill(cr);
 
             const KeyDef &key = KEYS[r][c];
-
-            if (pressed) {
-                FlickLabelPos pos[] = {
-                    {UP,    x + KEY_W/2.0, y + 8},
-                    {RIGHT, x + KEY_W - 8, y + KEY_H/2.0 - 8},
-                    {DOWN,  x + KEY_W/2.0, y + KEY_H - 24},
-                    {LEFT,  x + 4,         y + KEY_H/2.0 - 8},
-                };
-                for (auto &p : pos) {
-                    const char *ch = key.chars[p.d];
-                    if (!ch || ch == ACT_BACKSPACE || ch == ACT_DAKUTEN || ch == ACT_HANDAKUTEN || ch == ACT_SMALL) continue;
-                    if (p.d == live_dir)
-                        cairo_set_source_rgb(cr, 0.85, 0.25, 0.05);
-                    else
-                        cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
-                    pangoDrawText(cr, ch, p.cx - 8, p.cy, 16, 20, 12, false);
-                }
-
-                if (live_dir == CENTER)
-                    cairo_set_source_rgb(cr, 0.85, 0.25, 0.05);
-                else
-                    cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
-                pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, key.font_size);
-            } else {
-                cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
-                pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, key.font_size);
-            }
+            cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
+            pangoDrawText(cr, key.label, x, y, KEY_W, KEY_H, key.font_size);
         }
     }
 
     if (app.pressing) {
-        double dx = app.cur_x - app.press_x;
-        double dy = app.cur_y - app.press_y;
-        double dist = std::sqrt(dx*dx + dy*dy);
-        if (dist > 8) {
+        const KeyDef key = KEYS[app.press_row][app.press_col];
+        const char *ch = key.chars[live_dir];
+        if (ch && ch != ACT_BACKSPACE && ch != ACT_DAKUTEN && ch != ACT_HANDAKUTEN && ch != ACT_SMALL) {
             double kx = app.press_col * KEY_W + KEY_W / 2.0;
             double ky = app.press_row * KEY_H + KEY_H / 2.0 + TOP_OFFSET;
-            double scale = std::min(dist, KEY_W / 2.0 - 12) / dist;
-            double ex = kx + dx * scale;
-            double ey = ky + dy * scale;
-            double angle = std::atan2(dy, dx);
-
-            cairo_set_source_rgba(cr, 0.15, 0.45, 0.95, 0.8);
-            cairo_set_line_width(cr, 3);
-            cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-            cairo_move_to(cr, kx, ky);
-            cairo_line_to(cr, ex, ey);
-            cairo_stroke(cr);
-
-            cairo_move_to(cr, ex, ey);
-            cairo_line_to(cr, ex - 10 * std::cos(angle - 0.45), ey - 10 * std::sin(angle - 0.45));
-            cairo_move_to(cr, ex, ey);
-            cairo_line_to(cr, ex - 10 * std::cos(angle + 0.45), ey - 10 * std::sin(angle + 0.45));
-            cairo_stroke(cr);
+            drawCallout(cr, kx, ky, key, live_dir);
         }
     }
 

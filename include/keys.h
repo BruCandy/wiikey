@@ -7,7 +7,7 @@ static const int KEY_H           = 55;
 static const int COLS            = 5;
 static const int ROWS            = 4;
 static const int FLICK_THRESHOLD = 20;
-static const int TOP_OFFSET      = 35;
+static const int TOP_OFFSET      = 50;
 
 inline const char* const ACT_BACKSPACE  = "\x01";
 inline const char* const ACT_DAKUTEN    = "\x02";
