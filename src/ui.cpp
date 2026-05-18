@@ -11,10 +11,12 @@
 #include "uinput_dev.h"
 
 
-struct FlickLabelPos {
-    FlickDir d;
-    double cx, cy;
-};
+static bool isInKey(double ex, double ey, int row, int col) {
+    double kx = col * KEY_W;
+    double ky = row * KEY_H + TOP_OFFSET;
+    return ex >= kx + 3 && ex <= kx + KEY_W - 3 &&
+           ey >= ky + 3 && ey <= ky + KEY_H - 3;
+}
 
 static void roundedRect(cairo_t *cr, double x, double y, double w, double h, double r) {
     cairo_move_to(cr, x + r, y);
@@ -130,6 +132,7 @@ gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, gpointer) {
     int col = (int)(event->x / KEY_W);
     int row = (int)((event->y - TOP_OFFSET) / KEY_H);
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return FALSE;
+    if (!isInKey(event->x, event->y, row, col)) return FALSE;
 
     app.pressing  = true;
     app.press_row = row;
@@ -145,7 +148,9 @@ gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, gpointer) {
 gboolean onMotion(GtkWidget *widget, GdkEventMotion *event, gpointer) {
     int col = (int)(event->x / KEY_W);
     int row = (int)((event->y - TOP_OFFSET) / KEY_H);
-    int new_hover_row = (row >= 0 && row < ROWS && col >= 0 && col < COLS) ? row : -1;
+    int new_hover_row = (row >= 0 && row < ROWS && col >= 0 && col < COLS
+                        && isInKey(event->x, event->y, row, col))
+                        ? row : -1;
     int new_hover_col = (new_hover_row >= 0) ? col : -1;
     if (new_hover_row != app.hover_row || new_hover_col != app.hover_col) {
         app.hover_row = new_hover_row;
